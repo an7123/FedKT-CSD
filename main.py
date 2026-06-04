@@ -40,13 +40,13 @@ from dp import clip_latents, dp_statistics, sample
 
 # ── Data loading ──────────────────────────────────────────────
 
-# Optional: pre-built EuroSAT zips in DPImageBench format.
+# Optional: pre-built EuroSAT zips (images + dataset.json manifest).
 # Set via --data-dir or EUROSAT_DATA_DIR env var; otherwise auto-downloaded.
-DPIMAGEBENCH_EUROSAT = os.environ.get("EUROSAT_DATA_DIR", "")
+EUROSAT_ZIP_DIR = os.environ.get("EUROSAT_DATA_DIR", "")
 
 
-def _load_dpimagebench_zip(data_dir, split, img_size):
-    """Load from DPImageBench zip format (optional fast path)."""
+def _load_zip(data_dir, split, img_size):
+    """Load from preprocessed zip format (optional fast path)."""
     path = os.path.join(data_dir, f"{split}_{img_size}.zip")
     if not os.path.exists(path):
         path = os.path.join(data_dir, f"{split}_32.zip")
@@ -63,7 +63,7 @@ def _load_dpimagebench_zip(data_dir, split, img_size):
 def _load_eurosat_torchvision(data_dir, img_size, test_frac=4000, seed=0):
     """Auto-download EuroSAT via torchvision and create a deterministic split.
 
-    Matches the DPImageBench split sizes (23000 train / 4000 test) so that
+    Uses a fixed split (23000 train / 4000 test) so that
     numbers are directly comparable across runs.
     """
     tfm = transforms.Compose([transforms.Resize(img_size), transforms.ToTensor()])
@@ -96,15 +96,15 @@ def load_dataset(name, data_dir="./data", img_size=64):
         te_x, te_y = to_t(test)
         return tr_x, tr_y, te_x, te_y, 100
 
-    # EuroSAT: prefer the DPImageBench preprocessed zips if present (faster
-    # and matches the original split exactly), otherwise auto-download.
-    if data_dir == "./data" and DPIMAGEBENCH_EUROSAT and os.path.exists(
-            os.path.join(DPIMAGEBENCH_EUROSAT, f"train_{img_size}.zip")):
-        tr_x, tr_y = _load_dpimagebench_zip(DPIMAGEBENCH_EUROSAT, "train", img_size)
-        te_x, te_y = _load_dpimagebench_zip(DPIMAGEBENCH_EUROSAT, "test", img_size)
+    # EuroSAT: prefer preprocessed zips if present (faster and matches the
+    # original split exactly), otherwise auto-download via torchvision.
+    if data_dir == "./data" and EUROSAT_ZIP_DIR and os.path.exists(
+            os.path.join(EUROSAT_ZIP_DIR, f"train_{img_size}.zip")):
+        tr_x, tr_y = _load_zip(EUROSAT_ZIP_DIR, "train", img_size)
+        te_x, te_y = _load_zip(EUROSAT_ZIP_DIR, "test", img_size)
     elif os.path.exists(os.path.join(data_dir, f"train_{img_size}.zip")):
-        tr_x, tr_y = _load_dpimagebench_zip(data_dir, "train", img_size)
-        te_x, te_y = _load_dpimagebench_zip(data_dir, "test", img_size)
+        tr_x, tr_y = _load_zip(data_dir, "train", img_size)
+        te_x, te_y = _load_zip(data_dir, "test", img_size)
     else:
         tr_x, tr_y, te_x, te_y = _load_eurosat_torchvision(data_dir, img_size)
     return tr_x, tr_y, te_x, te_y, tr_y.unique().numel()
@@ -208,7 +208,7 @@ def _make_resnet18(num_classes):
 def train_and_eval(syn_x, syn_y, te_x, te_y, K, device, epochs=200):
     """Train CIFAR-style ResNet-18 on synthetic data, evaluate on real test."""
     model = _make_resnet18(K).to(device)
-    # normalise to [-1, 1] matching DPImageBench protocol
+    # normalise to [-1, 1]
     syn_x_norm = syn_x * 2 - 1
     te_x_norm = te_x * 2 - 1
     train_ld = DataLoader(TensorDataset(syn_x_norm, syn_y),

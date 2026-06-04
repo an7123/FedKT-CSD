@@ -118,7 +118,7 @@ def load_dataset(name, data_dir="./data", img_size=64):
         te_x, te_y = to_t(test)
         return tr_x, tr_y, te_x, te_y, 100
 
-    # Try zip format first (DPImageBench preprocessed), fallback to torchvision
+    # Try preprocessed zip format first, fallback to torchvision auto-download
     if data_dir != "./data":
         dd = data_dir
     elif EUROSAT_DIR and os.path.exists(os.path.join(EUROSAT_DIR, "train_64.zip")):

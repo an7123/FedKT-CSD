@@ -32,9 +32,7 @@ downstream accuracy
 ```
 
 Privacy accounting: ε is split evenly across the per-class first and
-second moments and calibrated with the **analytic Gaussian mechanism**
-(Balle & Wang, NeurIPS 2018). Classes are disjoint, so composition across
-classes is parallel.
+second moments and calibrated with the **Gaussian mechanism**. 
 
 ## Files
 
@@ -109,7 +107,7 @@ Useful flags:
 | `--epochs`            | 200     | downstream classifier epochs               |
 | `--output-dir`        | ./output| where to write images, plots, results.json |
 
-If you have pre-built EuroSAT zips in DPImageBench format, point to them
+If you have pre-built EuroSAT zips (images + `dataset.json` manifest), point to them
 with `--data-dir /path/to/eurosat` or `export EUROSAT_DATA_DIR=/path/to/eurosat`.
 Otherwise, the dataset is auto-downloaded via torchvision on first run.
 
@@ -130,4 +128,4 @@ DATASET=eurosat EPSILON=10 EPOCHS=200 ./run.sh
 ```
 
 Expected: ~82% test accuracy on EuroSAT at (ε=10, δ=1e-5).
-A 40-epoch smoke test reaches ~70% in a few minutes on a single RTX 5090.
+A 40-epoch smoke test reaches ~70% in a few minutes on a single GPU.
