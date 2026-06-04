@@ -1,0 +1,17 @@
+# Core
+torch>=2.1
+torchvision>=0.16
+numpy>=1.24
+scipy>=1.11
+Pillow>=10.0
+matplotlib>=3.7
+
+# DC-AE encoder/decoder (pretrained from HuggingFace)
+huggingface_hub>=0.20
+safetensors>=0.4
+timm>=0.9
+einops>=0.7
+
+# DC-AE upstream extras (efficientvit imports these even at inference time)
+omegaconf>=2.3
+segment-anything
