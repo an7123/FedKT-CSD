@@ -6,27 +6,26 @@ with a frozen public autoencoder, release per-class Gaussian moments under
 the analytic Gaussian mechanism, then sample and decode.
 
 This is the minimal pipeline behind the EuroSAT result reported in the
-paper (≈ **82.7% test accuracy at ε=10, δ=1e-5**), with no diffusion
-training, no DP-SGD, and no per-example gradients.
+paper (≈ **80.0% test accuracy at ε=10, δ=1e-5**).
 
 ## Pipeline
 
 ```
 private images
-   │  encode (frozen DC-AE, public)        ← no privacy cost
+   │  encode (frozen DC-AE, public)        
    ▼
 latent codes  z ∈ ℝ¹²⁸
-   │  L2-clip to threshold R               ← data-independent
+   │  L2-clip to threshold R              
    ▼
 clipped latents
    │  per-class μ, Σ + Gaussian noise      ← (ε, δ)-DP release
    ▼
 DP sufficient statistics
-   │  sample z' ~ N(μ̂, Σ̂)                 ← post-processing (free)
-   │  decode (frozen DC-AE)                ← post-processing (free)
+   │  sample z' ~ N(μ̂, Σ̂)                 ← post-processing 
+   │  decode (frozen DC-AE)                ← post-processing 
    ▼
 synthetic images
-   │  train ResNet-18, eval on real test   ← post-processing (free)
+   │  train ResNet-18, eval on real test   ← post-processing 
    ▼
 downstream accuracy
 ```
@@ -44,15 +43,6 @@ second moments and calibrated with the **Gaussian mechanism**.
 | `fed.py`               | federated variant: same pipeline, split across clients        |
 | `verify_invariance.py` | correctness test: federated stats == centralized stats        |
 
-`fed.py` is the federated counterpart of `main.py`. Each client locally
-encodes its shard, computes per-class sums of `z` and `zz^T`, adds its
-share of Gaussian noise, and uploads to the server, which aggregates and
-samples. Because mean/covariance are linear in the per-example sums and
-the Gaussian mechanism is closed under summation, this is mathematically
-identical to the centralized release — `verify_invariance.py` runs both
-paths on the same data with the same RNG seed and asserts the resulting
-per-class (μ, Σ) match bit-for-bit. It exists so the federated split can
-be trusted without re-doing the privacy analysis.
 
 ```bash
 python fed.py              --dataset eurosat --num-clients 20 --alpha 0.5
@@ -120,12 +110,3 @@ After running, `output/` contains:
 - `synthetic_grid.png` — synthetic-only overview
 - `norm_histogram.png` — latent L2 norm distribution + clip threshold
 - `results.json` — final accuracy + run config
-
-## Reproducing the paper number
-
-```bash
-DATASET=eurosat EPSILON=10 EPOCHS=200 ./run.sh
-```
-
-Expected: ~82% test accuracy on EuroSAT at (ε=10, δ=1e-5).
-A 40-epoch smoke test reaches ~70% in a few minutes on a single GPU.
